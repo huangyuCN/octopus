@@ -8,23 +8,22 @@ import (
 
 // HandlerFunc defines the request handler
 // HandlerFunc 定义了http的请求处理方法
-type HandlerFunc func(http.ResponseWriter, *http.Request)
+type HandlerFunc func(c *Context)
 
 // Engine implement the interface if ServerHttp
 type Engine struct {
 	ln     *net.Listener
-	router map[string]HandlerFunc
+	router *router
 }
 
 // New is the constructor of Engine
 func New() *Engine {
-	return &Engine{router: make(map[string]HandlerFunc)}
+	return &Engine{router: newRouter()}
 }
 
 // addRoute 添加一条路由信息
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
-	key := method + "-" + pattern
-	engine.router[key] = handler
+	engine.router.addRoute(method, pattern, handler)
 }
 
 // GET defines the method the route of get request
@@ -50,19 +49,12 @@ func (engine *Engine) RUN(ip string, port string) error {
 }
 
 //STOP close the tcp connect
-func (engine *Engine) STOP()error {
+func (engine *Engine) STOP() error {
 	ln := *engine.ln
 	return ln.Close()
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	key := req.Method + "-" + req.URL.Path
-	if handler, ok := engine.router[key]; ok {
-		handler(w, req)
-	} else {
-		_, err := fmt.Fprintf(w, "404 NOT FOUND:%s \n", req.URL)
-		if err != nil {
-			fmt.Printf("return 404 error:%s \n", err)
-		}
-	}
+	c := newContext(w, req)
+	engine.router.handle(c)
 }

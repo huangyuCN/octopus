@@ -2,20 +2,25 @@ package octopus
 
 import (
 	"fmt"
-	"net/http"
 	"testing"
 )
 
 func TestEngine_RUN(t *testing.T) {
 	engine := New()
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("hello back"))
+	engine.GET("/get", func(ctx *Context) {
+		query := ctx.Query("param")
+		err := ctx.TextPlain(200, "%s", query)
 		if err != nil {
-			t.Fatalf("response %s failed, error:%s", r.URL.Path, err)
+			t.Fatalf("response %s failed, error:%s", ctx.Path, err)
 		}
-	}
-	engine.GET("/get", handler)
-	engine.POST("/post", handler)
+	})
+	engine.POST("/post", func(ctx *Context) {
+		data := ctx.PostForm("param")
+		err := ctx.TextPlain(200, "%s", data)
+		if err != nil {
+			t.Fatalf("response %s failed, error:%s", ctx.Path, err)
+		}
+	})
 	err := engine.RUN("127.0.0.1", "8888")
 	if err != nil {
 		t.Fatalf("server run error:%s \n", err)
