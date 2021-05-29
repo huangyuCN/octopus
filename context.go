@@ -13,7 +13,13 @@ type Context struct {
 	Req        *http.Request
 	Path       string //request path
 	Method     string //request method
-	StatusCode int    // response code
+	Params     map[string]string
+	StatusCode int // response code
+}
+
+func (c *Context) Param(key string) string {
+	value, _ := c.Params[key]
+	return value
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
